@@ -12,7 +12,7 @@ MosaicoInstagram es una aplicaci√≥n web basada en Django que permite mezclar im√
 
 1. **Clonar el repositorio y crear entorno virtual:**
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/Santiago21S/MosaicoInstagram.git
    cd MosaicoInstagram
    python3 -m venv venv
    source venv/bin/activate

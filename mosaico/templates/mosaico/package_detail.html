@@ -1,0 +1,344 @@
+{% extends "mosaico/base.html" %}
+{% load static %}
+
+{% block title %}{{ package.title|default:"Mosaico" }} — MosaicoIG{% endblock %}
+
+{% block content %}
+<section class="py-4 py-md-5">
+  <div class="container" data-package-id="{{ package.id }}" id="packageContainer">
+
+    <!-- ════════ Back + Header ════════ -->
+    <div class="mb-4 fade-in-up">
+      <a href="{% url 'package_list' %}" class="btn btn-sm btn-outline-secondary mb-3">
+        <i class="bi bi-arrow-left me-1"></i>Volver a mis mosaicos
+      </a>
+
+      <div class="glass-card p-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+          <!-- Left: title + meta -->
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <h2 class="fw-bold mb-0" id="packageTitle">
+                {{ package.title|default:"Paquete sin título" }}
+              </h2>
+              <button class="btn btn-sm btn-link text-muted p-0" id="editTitleBtn" title="Editar título">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <!-- Status badge -->
+              <span class="badge status-badge status-{{ package.status }}" id="statusBadge">
+                {% if package.status == 'processing' %}<span class="spinner-border spinner-border-sm me-1"></span>{% endif %}
+                {% if package.status == 'pending' %}Pendiente
+                {% elif package.status == 'processing' %}Procesando
+                {% elif package.status == 'completed' %}Completado
+                {% elif package.status == 'failed' %}Error
+                {% else %}{{ package.status }}{% endif %}
+              </span>
+
+              <!-- Filter badges -->
+              {% if package.filter_1 %}
+              <span class="badge bg-purple bg-opacity-25 text-purple-light" id="filter1Badge">
+                <i class="bi bi-funnel me-1"></i>{{ package.get_filter_1_display }}
+              </span>
+              {% endif %}
+              {% if package.filter_2 %}
+              <span class="badge bg-blue bg-opacity-25 text-blue-light" id="filter2Badge">
+                <i class="bi bi-funnel me-1"></i>{{ package.get_filter_2_display }}
+              </span>
+              {% endif %}
+
+              <span class="text-muted small">
+                <i class="bi bi-calendar3 me-1"></i>{{ package.created_at|date:"d M Y, H:i" }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Right: actions -->
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editPackageModal">
+              <i class="bi bi-gear me-1"></i>Editar
+            </button>
+            <button class="btn btn-sm btn-outline-danger" id="deletePackageBtn">
+              <i class="bi bi-trash me-1"></i>Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ Two-Column Layout ════════ -->
+    <div class="row g-4">
+
+      <!-- ──────── LEFT: Source Images ──────── -->
+      <div class="col-lg-6 fade-in-up" style="animation-delay:100ms;">
+        <div class="glass-card p-4 h-100">
+          <h5 class="fw-bold mb-3">
+            <i class="bi bi-images gradient-text me-2"></i>Imágenes Fuente
+            <span class="badge bg-secondary ms-2" id="imageCount">{{ images|length }}/4</span>
+          </h5>
+
+          <!-- Image Grid -->
+          <div class="row row-cols-2 g-3 mb-3" id="imageGrid">
+            {% for img in images %}
+            <div class="col" data-image-id="{{ img.id }}">
+              <div class="source-image-card position-relative">
+                <img src="{{ img.image.url }}" alt="Imagen {{ img.order }}"
+                     class="w-100 rounded-3 object-fit-cover" style="aspect-ratio:1;">
+                <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 rounded-circle delete-image-btn"
+                        data-image-id="{{ img.id }}" title="Eliminar imagen">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+                <span class="badge bg-dark position-absolute bottom-0 start-0 m-1 rounded-pill">
+                  #{{ img.order }}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+
+            <!-- Empty slots -->
+            {% for slot in empty_slots %}
+            <div class="col empty-slot">
+              <div class="upload-slot d-flex align-items-center justify-content-center rounded-3"
+                   style="aspect-ratio:1;">
+                <div class="text-center text-muted">
+                  <i class="bi bi-plus-lg" style="font-size:1.5rem;"></i>
+                  <div class="small mt-1">Slot {{ slot }}</div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Upload Zone -->
+          {% if images|length < 4 %}
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept="image/*" multiple class="d-none">
+            <div class="dropzone-content text-center py-4">
+              <i class="bi bi-cloud-arrow-up gradient-text" style="font-size:2.5rem;"></i>
+              <p class="mb-1 fw-semibold mt-2">Arrastra imágenes aquí</p>
+              <p class="text-muted small mb-2">o haz clic para seleccionar archivos</p>
+              <span class="badge bg-secondary">JPG, PNG, WebP &bull; Máx 4 imágenes</span>
+            </div>
+            <!-- Progress bar -->
+            <div class="progress mt-3 d-none" id="uploadProgress" style="height:6px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-gradient-bar"
+                   role="progressbar" style="width:0%;" id="uploadProgressBar"></div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ──────── RIGHT: Mosaic Section ──────── -->
+      <div class="col-lg-6 fade-in-up" style="animation-delay:200ms;">
+        <div class="glass-card p-4 h-100">
+          <h5 class="fw-bold mb-3">
+            <i class="bi bi-grid-3x3-gap-fill gradient-text me-2"></i>Mosaico
+          </h5>
+
+          <div id="mosaicSection">
+
+            <!-- STATUS: PENDING -->
+            {% if package.status == 'pending' %}
+            <div id="mosaicPending">
+              {% if images|length >= 2 %}
+              <div class="text-center py-4">
+                <div class="mb-3">
+                  <i class="bi bi-magic gradient-text" style="font-size:3rem;"></i>
+                </div>
+                <p class="text-muted mb-3">
+                  Tienes <strong>{{ images|length }}</strong> imagen{{ images|length|pluralize:"es" }} lista{{ images|length|pluralize:"s" }}.
+                  ¡Genera tu mosaico!
+                </p>
+                <div class="d-flex flex-wrap gap-2 justify-content-center mb-3">
+                  {% if package.filter_1 %}
+                  <span class="badge bg-purple bg-opacity-25 text-purple-light">
+                    <i class="bi bi-funnel me-1"></i>{{ package.get_filter_1_display }}
+                  </span>
+                  {% endif %}
+                  {% if package.filter_2 %}
+                  <span class="badge bg-blue bg-opacity-25 text-blue-light">
+                    <i class="bi bi-funnel me-1"></i>{{ package.get_filter_2_display }}
+                  </span>
+                  {% endif %}
+                </div>
+                <button class="btn btn-gradient btn-lg" id="generateBtn">
+                  <i class="bi bi-stars me-2"></i>Generar Mosaico
+                </button>
+              </div>
+              {% else %}
+              <div class="text-center py-5">
+                <i class="bi bi-image text-muted" style="font-size:3rem;opacity:.3;"></i>
+                <p class="text-muted mt-3">
+                  Sube al menos <strong>2 imágenes</strong> para generar tu mosaico.
+                </p>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- STATUS: PROCESSING -->
+            {% if package.status == 'processing' %}
+            <div id="mosaicProcessing">
+              <div class="text-center py-5">
+                <div class="processing-animation mb-4">
+                  <div class="mosaic-spinner">
+                    <div class="spinner-tile"></div>
+                    <div class="spinner-tile"></div>
+                    <div class="spinner-tile"></div>
+                    <div class="spinner-tile"></div>
+                    <div class="spinner-tile"></div>
+                    <div class="spinner-tile"></div>
+                    <div class="spinner-tile"></div>
+                    <div class="spinner-tile"></div>
+                    <div class="spinner-tile"></div>
+                  </div>
+                </div>
+                <h5 class="fw-bold mb-2">Generando tu mosaico…</h5>
+                <p class="text-muted small">Esto puede tomar unos segundos</p>
+                <div class="spinner-border text-purple mt-2" role="status">
+                  <span class="visually-hidden">Procesando…</span>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- STATUS: COMPLETED -->
+            {% if package.status == 'completed' %}
+            <div id="mosaicCompleted">
+              <!-- 3x3 Mosaic Grid Preview -->
+              <div class="mosaic-grid mb-4" id="mosaicGrid">
+                {% for tile in tiles %}
+                <div class="mosaic-tile">
+                  <img src="{{ tile.image.url }}" alt="Tile {{ forloop.counter }}" loading="lazy">
+                </div>
+                {% empty %}
+                {% for i in "123456789" %}
+                <div class="mosaic-tile mosaic-tile-placeholder">
+                  <span class="text-muted small">{{ forloop.counter }}</span>
+                </div>
+                {% endfor %}
+                {% endfor %}
+              </div>
+
+              <!-- Actions -->
+              <div class="d-flex flex-wrap gap-2 justify-content-center">
+                <a href="/api/v1/packages/{{ package.id }}/download/"
+                   class="btn btn-gradient btn-lg" id="downloadBtn">
+                  <i class="bi bi-download me-2"></i>Descargar ZIP
+                </a>
+                <button class="btn btn-outline-secondary" id="regenerateBtn">
+                  <i class="bi bi-arrow-clockwise me-2"></i>Regenerar
+                </button>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- STATUS: FAILED -->
+            {% if package.status == 'failed' %}
+            <div id="mosaicFailed">
+              <div class="text-center py-4">
+                <i class="bi bi-exclamation-triangle text-danger" style="font-size:3rem;"></i>
+                <h5 class="fw-bold mt-3 mb-2">Error al generar</h5>
+                <p class="text-muted small mb-3">
+                  Ocurrió un problema al generar tu mosaico. Intenta de nuevo.
+                </p>
+                <button class="btn btn-gradient" id="retryBtn">
+                  <i class="bi bi-arrow-clockwise me-2"></i>Reintentar
+                </button>
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════ EDIT MODAL ═══════════════════ -->
+<div class="modal fade" id="editPackageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass-card border-0">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-pencil-square gradient-text me-2"></i>Editar Mosaico
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editPackageForm" novalidate>
+          <div class="mb-3">
+            <label for="edit-title" class="form-label small fw-semibold text-muted">Título</label>
+            <input type="text" id="edit-title" class="form-control glass-input"
+                   value="{{ package.title|default:'' }}" maxlength="128">
+          </div>
+          <div class="mb-3">
+            <label for="edit-filter1" class="form-label small fw-semibold text-muted">Filtro 1</label>
+            <select id="edit-filter1" class="form-select glass-input">
+              {% for value, label in filter_choices %}
+                <option value="{{ value }}" {% if package.filter_1 == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="edit-filter2" class="form-label small fw-semibold text-muted">Filtro 2</label>
+            <select id="edit-filter2" class="form-select glass-input">
+              {% for value, label in filter_choices %}
+                <option value="{{ value }}" {% if package.filter_2 == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div id="edit-error" class="alert alert-danger glass-alert py-2 small d-none">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <span id="edit-error-msg"></span>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" id="saveEditBtn" class="btn btn-gradient">
+          <i class="bi bi-check-lg me-1"></i>Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ DELETE CONFIRM MODAL ═══════════════════ -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content glass-card border-0">
+      <div class="modal-body text-center py-4">
+        <i class="bi bi-exclamation-triangle text-danger" style="font-size:3rem;"></i>
+        <h5 class="fw-bold mt-3">¿Eliminar mosaico?</h5>
+        <p class="text-muted small">Esta acción no se puede deshacer.</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            <i class="bi bi-trash me-1"></i>Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Pass data to JS
+  window.PACKAGE_DATA = {
+    id: {{ package.id }},
+    status: "{{ package.status }}",
+    imageCount: {{ images|length }},
+    listUrl: "{% url 'package_list' %}",
+    detailUrl: "{% url 'package_detail' package.id %}"
+  };
+</script>
+<script src="{% static 'mosaico/js/package_detail.js' %}"></script>
+{% endblock %}

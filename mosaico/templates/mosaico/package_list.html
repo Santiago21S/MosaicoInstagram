@@ -1,0 +1,176 @@
+{% extends "mosaico/base.html" %}
+{% load static %}
+
+{% block title %}Mis Mosaicos — MosaicoIG{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container">
+
+    <!-- ════════ Page Header ════════ -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 fade-in-up">
+      <div>
+        <h1 class="fw-bold mb-1">
+          <i class="bi bi-collection gradient-text me-2"></i>Mis Mosaicos
+        </h1>
+        <p class="text-muted mb-0">Gestiona y genera tus mosaicos para Instagram</p>
+      </div>
+      <button class="btn btn-gradient btn-lg" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+        <i class="bi bi-plus-lg me-2"></i>Nuevo Mosaico
+      </button>
+    </div>
+
+    <!-- ════════ Package Grid ════════ -->
+    {% if packages %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
+      {% for pkg in packages %}
+      <div class="col fade-in-up" style="animation-delay:{{ forloop.counter0 }}00ms;">
+        <a href="{% url 'package_detail' pkg.id %}" class="text-decoration-none">
+          <div class="glass-card package-card h-100 p-0 overflow-hidden">
+
+            <!-- Thumbnail -->
+            <div class="package-thumb">
+              {% with first_img=pkg.images.all.0 %}
+              {% if first_img %}
+                <img src="{{ first_img.image.url }}" alt="Preview"
+                     class="w-100 h-100 object-fit-cover">
+              {% else %}
+                <div class="d-flex align-items-center justify-content-center h-100 bg-dark bg-opacity-50">
+                  <i class="bi bi-image text-muted" style="font-size:3rem;opacity:.3;"></i>
+                </div>
+              {% endif %}
+              {% endwith %}
+              <!-- Status badge overlay -->
+              <span class="badge status-badge status-{{ pkg.status }}">
+                {% if pkg.status == 'processing' %}<span class="spinner-border spinner-border-sm me-1"></span>{% endif %}
+                {% if pkg.status == 'pending' %}Pendiente
+                {% elif pkg.status == 'processing' %}Procesando
+                {% elif pkg.status == 'completed' %}Completado
+                {% elif pkg.status == 'failed' %}Error
+                {% else %}{{ pkg.status }}{% endif %}
+              </span>
+            </div>
+
+            <!-- Card body -->
+            <div class="p-3">
+              <h6 class="fw-semibold text-white mb-2 text-truncate">
+                {% if pkg.title %}{{ pkg.title }}{% else %}Paquete #{{ pkg.id }}{% endif %}
+              </h6>
+
+              <!-- Filter badges -->
+              <div class="d-flex flex-wrap gap-1 mb-2">
+                {% if pkg.filter_1 %}
+                  <span class="badge bg-purple bg-opacity-25 text-purple-light">
+                    <i class="bi bi-funnel me-1"></i>{{ pkg.get_filter_1_display }}
+                  </span>
+                {% endif %}
+                {% if pkg.filter_2 %}
+                  <span class="badge bg-blue bg-opacity-25 text-blue-light">
+                    <i class="bi bi-funnel me-1"></i>{{ pkg.get_filter_2_display }}
+                  </span>
+                {% endif %}
+              </div>
+
+              <!-- Meta -->
+              <div class="d-flex align-items-center justify-content-between text-muted small">
+                <span>
+                  <i class="bi bi-images me-1"></i>{{ pkg.images.count }} img
+                </span>
+                <span>
+                  <i class="bi bi-calendar3 me-1"></i>{{ pkg.created_at|date:"d M Y" }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- ════════ Empty State ════════ -->
+    <div class="text-center py-5 fade-in-up">
+      <div class="glass-card d-inline-block p-5" style="max-width:500px;">
+        <div class="empty-icon mb-4">
+          <i class="bi bi-grid-3x3-gap" style="font-size:5rem;"></i>
+        </div>
+        <h4 class="fw-bold mb-2">No tienes mosaicos aún</h4>
+        <p class="text-muted mb-4">
+          Crea tu primer mosaico y genera un grid increíble para tu perfil de Instagram.
+        </p>
+        <button class="btn btn-gradient btn-lg" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+          <i class="bi bi-plus-lg me-2"></i>Crear mi primer mosaico
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+<!-- ═══════════════════ CREATE MODAL ═══════════════════ -->
+<div class="modal fade" id="createPackageModal" tabindex="-1" aria-labelledby="createPackageLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass-card border-0">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold" id="createPackageLabel">
+          <i class="bi bi-plus-circle gradient-text me-2"></i>Nuevo Mosaico
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="createPackageForm" novalidate>
+          <!-- Title -->
+          <div class="mb-3">
+            <label for="pkg-title" class="form-label small fw-semibold text-muted">Título</label>
+            <input type="text" id="pkg-title" class="form-control glass-input"
+                   placeholder="Ej: Mi grid de verano" maxlength="128">
+          </div>
+
+          <!-- Filter 1 -->
+          <div class="mb-3">
+            <label for="pkg-filter1" class="form-label small fw-semibold text-muted">
+              <i class="bi bi-funnel me-1"></i>Filtro 1
+            </label>
+            <select id="pkg-filter1" class="form-select glass-input">
+              {% for value, label in filter_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Filter 2 -->
+          <div class="mb-3">
+            <label for="pkg-filter2" class="form-label small fw-semibold text-muted">
+              <i class="bi bi-funnel me-1"></i>Filtro 2
+            </label>
+            <select id="pkg-filter2" class="form-select glass-input">
+              {% for value, label in filter_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Validation error -->
+          <div id="create-error" class="alert alert-danger glass-alert py-2 small d-none">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <span id="create-error-msg"></span>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" id="createPackageBtn" class="btn btn-gradient">
+          <i class="bi bi-plus-lg me-1"></i>Crear Mosaico
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'mosaico/js/package_list.js' %}"></script>
+{% endblock %}

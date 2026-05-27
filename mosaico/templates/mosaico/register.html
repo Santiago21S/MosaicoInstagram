@@ -1,0 +1,88 @@
+{% extends "mosaico/base.html" %}
+{% load static %}
+
+{% block title %}Crear cuenta — MosaicoIG{% endblock %}
+
+{% block content %}
+<section class="auth-section d-flex align-items-center justify-content-center min-vh-75 py-5">
+  <div class="container" style="max-width:480px;">
+    <div class="glass-card p-4 p-md-5 fade-in-up">
+
+      <!-- Header -->
+      <div class="text-center mb-4">
+        <div class="auth-icon-wrapper mb-3">
+          <i class="bi bi-person-plus-fill gradient-text" style="font-size:2.5rem;"></i>
+        </div>
+        <h2 class="fw-bold mb-1">Crea tu cuenta</h2>
+        <p class="text-muted small">Regístrate y empieza a generar mosaicos increíbles</p>
+      </div>
+
+      <!-- Form -->
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger glass-alert py-2 small">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            {% for error in form.non_field_errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Username -->
+        <div class="mb-3">
+          <label for="id_username" class="form-label small fw-semibold text-muted">
+            <i class="bi bi-person me-1"></i>Usuario
+          </label>
+          <input type="text" name="username" id="id_username"
+                 class="form-control form-control-lg glass-input {% if form.username.errors %}is-invalid{% endif %}"
+                 placeholder="Elige un nombre de usuario" autofocus required
+                 value="{{ form.username.value|default:'' }}">
+          {% if form.username.errors %}
+            <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
+          {% endif %}
+          <div class="form-text text-muted small mt-1">{{ form.username.help_text }}</div>
+        </div>
+
+        <!-- Password 1 -->
+        <div class="mb-3">
+          <label for="id_password1" class="form-label small fw-semibold text-muted">
+            <i class="bi bi-lock me-1"></i>Contraseña
+          </label>
+          <input type="password" name="password1" id="id_password1"
+                 class="form-control form-control-lg glass-input {% if form.password1.errors %}is-invalid{% endif %}"
+                 placeholder="Crea una contraseña segura" required>
+          {% if form.password1.errors %}
+            <div class="invalid-feedback">{{ form.password1.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Password 2 -->
+        <div class="mb-3">
+          <label for="id_password2" class="form-label small fw-semibold text-muted">
+            <i class="bi bi-lock-fill me-1"></i>Confirmar contraseña
+          </label>
+          <input type="password" name="password2" id="id_password2"
+                 class="form-control form-control-lg glass-input {% if form.password2.errors %}is-invalid{% endif %}"
+                 placeholder="Repite la contraseña" required>
+          {% if form.password2.errors %}
+            <div class="invalid-feedback">{{ form.password2.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn btn-gradient btn-lg w-100 mb-3 mt-2">
+          <i class="bi bi-person-plus me-2"></i>Crear cuenta
+        </button>
+      </form>
+
+      <!-- Login link -->
+      <div class="text-center">
+        <span class="text-muted small">¿Ya tienes cuenta?</span>
+        <a href="{% url 'login' %}" class="gradient-link small fw-semibold ms-1">Iniciar sesión</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

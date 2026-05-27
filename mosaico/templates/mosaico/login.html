@@ -1,0 +1,88 @@
+{% extends "mosaico/base.html" %}
+{% load static %}
+
+{% block title %}Iniciar sesión — MosaicoIG{% endblock %}
+
+{% block content %}
+<section class="auth-section d-flex align-items-center justify-content-center min-vh-75 py-5">
+  <div class="container" style="max-width:440px;">
+    <div class="glass-card p-4 p-md-5 fade-in-up">
+
+      <!-- Header -->
+      <div class="text-center mb-4">
+        <div class="auth-icon-wrapper mb-3">
+          <i class="bi bi-grid-3x3-gap-fill gradient-text" style="font-size:2.5rem;"></i>
+        </div>
+        <h2 class="fw-bold mb-1">Bienvenido de vuelta</h2>
+        <p class="text-muted small">Inicia sesión para acceder a tus mosaicos</p>
+      </div>
+
+      <!-- Form -->
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.errors %}
+          <div class="alert alert-danger glass-alert py-2 small">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Usuario o contraseña incorrectos. Intenta de nuevo.
+          </div>
+        {% endif %}
+
+        <!-- Username -->
+        <div class="mb-3">
+          <label for="id_username" class="form-label small fw-semibold text-muted">
+            <i class="bi bi-person me-1"></i>Usuario
+          </label>
+          <input type="text" name="username" id="id_username"
+                 class="form-control form-control-lg glass-input"
+                 placeholder="Tu nombre de usuario" autofocus required
+                 value="{{ form.username.value|default:'' }}">
+        </div>
+
+        <!-- Password -->
+        <div class="mb-4">
+          <label for="id_password" class="form-label small fw-semibold text-muted">
+            <i class="bi bi-lock me-1"></i>Contraseña
+          </label>
+          <div class="input-group">
+            <input type="password" name="password" id="id_password"
+                   class="form-control form-control-lg glass-input"
+                   placeholder="Tu contraseña" required>
+            <button class="btn btn-outline-secondary border-0" type="button"
+                    onclick="togglePassword('id_password', this)" tabindex="-1">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn btn-gradient btn-lg w-100 mb-3">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión
+        </button>
+      </form>
+
+      <!-- Register link -->
+      <div class="text-center">
+        <span class="text-muted small">¿No tienes cuenta?</span>
+        <a href="{% url 'register' %}" class="gradient-link small fw-semibold ms-1">Crear cuenta</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+  }
+</script>
+{% endblock %}

@@ -77,5 +77,6 @@ pytest mosaico/tests/ --cov=mosaico --cov-report=term-missing
 ## 📝 Créditos
 
 **Nombres y Matrículas:**
-- [Nombre del Fullstack Dev] - [Matrícula]
-- [Nombre del QA] - [Matrícula]
+- Santiago Sanabria Basurto A01773072
+- Mauricio Gonzalez Segovia A01770038
+- Hannah Becerrill Guadarrama A0176951

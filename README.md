@@ -80,3 +80,7 @@ pytest mosaico/tests/ --cov=mosaico --cov-report=term-missing
 - Santiago Sanabria Basurto A01773072
 - Mauricio Gonzalez Segovia A01770038
 - Hannah Becerrill Guadarrama A0176951
+
+## Video 
+
+- https://drive.google.com/file/d/115qInwuaEoZivRhcEBz_Jh_iitXh-siW/view?usp=sharing
